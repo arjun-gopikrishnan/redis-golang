@@ -6,7 +6,7 @@ This repository is a Redis clone built in Go. Working on this project helped me 
 
 1. **Clone this repository**
    ```sh
-   git clone <repository-url>
+   git clone https://github.com/arjun-gopikrishnan/redis-golang.git
    ```
 2. **Install Telnet**
    - On Debian-based systems (e.g., Ubuntu):
