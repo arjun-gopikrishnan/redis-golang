@@ -2,19 +2,26 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log/slog"
 	"net"
 	"strings"
 )
 
 type Peer struct {
-	conn net.Conn
+	conn  net.Conn
+	store map[string]string
 }
 
 func NewPeer(conn net.Conn) *Peer {
 	return &Peer{
-		conn: conn,
+		conn:  conn,
+		store: make(map[string]string),
 	}
+}
+
+func (p *Peer) SetKey(key string, value string) {
+	p.store[key] = value
 }
 
 func (p *Peer) readLoop() {
@@ -23,7 +30,7 @@ func (p *Peer) readLoop() {
 
 	for scanner.Scan() {
 		command := scanner.Text()
-		lines := strings.Split(strings.ReplaceAll(command, "\r", ""), `\n`)
+		lines := strings.Split(strings.ReplaceAll(command, "\r", ""), ` `)
 		action := strings.ToUpper(lines[0])
 		slog.Info("Printing the chosen command", "action", action)
 		switch action {
@@ -36,6 +43,20 @@ func (p *Peer) readLoop() {
 			} else {
 				p.conn.Write([]byte("\r\n"))
 			}
+		case "SET":
+			slog.Info("Command called", "command", "SET")
+			if len(lines) < 3 {
+				slog.Info("Invalid SET command", "command", "SET")
+				p.conn.Write([]byte("Invalid SET command\r\n"))
+				return
+			}
+			keyName := lines[1]
+			keyValue := strings.Join(lines[2:], "\n") + "\r\n"
+			p.SetKey(keyName, keyValue)
+			response := fmt.Sprintf("Set Key: %s\r\n", keyName)
+			p.conn.Write([]byte(response))
+		case "GET":
+			slog.Info("Command called", "command", "GET")
 		default:
 			p.conn.Write([]byte("Command not recognized\r\n"))
 		}
