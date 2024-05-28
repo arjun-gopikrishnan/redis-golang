@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -22,6 +23,15 @@ func NewPeer(conn net.Conn) *Peer {
 
 func (p *Peer) SetKey(key string, value string) {
 	p.store[key] = value
+}
+
+func (p *Peer) GetKey(key string) (string, error) {
+	value, exists := p.store[key]
+	print(p.store)
+	if !exists {
+		return "", errors.New("key not found")
+	}
+	return value, nil
 }
 
 func (p *Peer) readLoop() {
@@ -57,6 +67,24 @@ func (p *Peer) readLoop() {
 			p.conn.Write([]byte(response))
 		case "GET":
 			slog.Info("Command called", "command", "GET")
+			if len(lines) < 2 {
+				slog.Info("Invalid GET command", "command", "GET")
+				p.conn.Write([]byte("Invalid GET command\r\n"))
+				return
+			}
+
+			keyName := lines[1]
+
+			keyValue, err := p.GetKey(keyName)
+
+			if err != nil {
+				response := fmt.Sprintf("Error: %s\r\n", err)
+				p.conn.Write([]byte(response))
+				return
+			}
+			response := fmt.Sprintf("Value: %s\r\n", keyValue)
+			p.conn.Write([]byte(response))
+
 		default:
 			p.conn.Write([]byte("Command not recognized\r\n"))
 		}
