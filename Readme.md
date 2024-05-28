@@ -31,12 +31,4 @@ This repository is a Redis clone built in Go. Working on this project helped me 
    ```
    Replace `<PORT>` with the port number your server is running on.
 
-## Project Overview
-
-This Redis clone is a personal project aimed at deepening my understanding of the following:
-
-- **TCP Server Implementation**: How to create and manage a TCP server in Go.
-- **Redis Protocol**: Understanding the communication protocol used by Redis.
-- **Distributed Key-Value Servers**: Basics of building a distributed key-value store.
-
 Feel free to explore the code, suggest improvements, or use it as a learning resource. Enjoy!
