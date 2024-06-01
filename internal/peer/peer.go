@@ -3,10 +3,13 @@ package peer
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 
 	"log"
+
+	. "github.com/arjun/redis-go/internal/resp"
 )
 
 type Peer struct {
@@ -39,6 +42,15 @@ func (p *Peer) ReadLoop() {
 
 	for scanner.Scan() {
 		command := scanner.Text()
+		RedisCommand,err := ParseRespCommand(command)
+		RedisCommand.Display();
+
+		if(err != nil){
+			slog.Warn("Encountered an error while parsing text","Error" ,err.Error())
+			response := EncodeErrorMsgToResp(err.Error(),"ERR")
+			p.conn.Write([]byte(response))
+			continue
+		}
 		lines := strings.Split(strings.ReplaceAll(command, "\r", ""), ` `)
 		action := strings.ToUpper(lines[0])
 		log.Println("Printing the chosen command", "action", action)
@@ -62,7 +74,7 @@ func (p *Peer) ReadLoop() {
 			keyName := lines[1]
 			keyValue := strings.Join(lines[2:], "\n") + "\r\n"
 			p.SetKey(keyName, keyValue)
-			response := "+OK\r\n"
+			response := EncodeSimpleStringToResp("OK")
 			p.conn.Write([]byte(response))
 		case "GET":
 			log.Println("Command called", "command", "GET")

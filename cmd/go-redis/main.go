@@ -83,6 +83,5 @@ func (s *Server) handleConn(conn net.Conn) {
 
 func main() {
 	server := NewServer(Config{})
-
 	log.Fatal(server.Start())
 }
