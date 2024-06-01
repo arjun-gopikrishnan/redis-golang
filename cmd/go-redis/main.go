@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"log/slog"
 	"net"
+
+	. "github.com/arjun/redis-go/internal/peer"
 )
 
 const defaultListenAddress = ":6379"
@@ -21,10 +22,8 @@ type Server struct {
 }
 
 func NewServer(cfg Config) *Server {
-
 	if len(cfg.ListenAddress) == 0 {
 		cfg.ListenAddress = defaultListenAddress
-
 	}
 
 	return &Server{
@@ -36,7 +35,6 @@ func NewServer(cfg Config) *Server {
 }
 
 func (s *Server) Start() error {
-
 	ln, err := net.Listen("tcp", s.Config.ListenAddress)
 	if err != nil {
 		return err
@@ -44,10 +42,9 @@ func (s *Server) Start() error {
 
 	s.ln = ln
 
-	// go s.acceptLoop()
 	go s.loop()
 
-	slog.Info("server running", "listenAddr", s.Config.ListenAddress)
+	log.Println("server running", "listenAddr", s.Config.ListenAddress)
 
 	return s.acceptLoop()
 }
@@ -67,7 +64,8 @@ func (s *Server) acceptLoop() error {
 	for {
 		conn, err := s.ln.Accept()
 		if err != nil {
-			slog.Error("accept error", "err", err)
+			log.Println("accept error", "err", err)
+			continue
 		}
 
 		go s.handleConn(conn)
@@ -78,9 +76,9 @@ func (s *Server) handleConn(conn net.Conn) {
 	peer := NewPeer(conn)
 	s.addPeerCh <- peer
 
-	slog.Info("New peer connected", "remoteAddr", conn.RemoteAddr())
+	log.Println("New peer connected", "remoteAddr", conn.RemoteAddr())
 
-	go peer.readLoop()
+	go peer.ReadLoop()
 }
 
 func main() {

@@ -1,12 +1,12 @@
-package main
+package peer
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
-	"log/slog"
 	"net"
 	"strings"
+
+	"log"
 )
 
 type Peer struct {
@@ -27,14 +27,13 @@ func (p *Peer) SetKey(key string, value string) {
 
 func (p *Peer) GetKey(key string) (string, error) {
 	value, exists := p.store[key]
-	print(p.store)
 	if !exists {
-		return "", errors.New("key not found")
+		return "$-1\r\n", nil
 	}
 	return value, nil
 }
 
-func (p *Peer) readLoop() {
+func (p *Peer) ReadLoop() {
 	defer p.conn.Close()
 	scanner := bufio.NewScanner(p.conn)
 
@@ -42,7 +41,7 @@ func (p *Peer) readLoop() {
 		command := scanner.Text()
 		lines := strings.Split(strings.ReplaceAll(command, "\r", ""), ` `)
 		action := strings.ToUpper(lines[0])
-		slog.Info("Printing the chosen command", "action", action)
+		log.Println("Printing the chosen command", "action", action)
 		switch action {
 		case "PING":
 			p.conn.Write([]byte("+PONG\r\n"))
@@ -54,21 +53,21 @@ func (p *Peer) readLoop() {
 				p.conn.Write([]byte("\r\n"))
 			}
 		case "SET":
-			slog.Info("Command called", "command", "SET")
+			log.Println("Command called", "command", "SET")
 			if len(lines) < 3 {
-				slog.Info("Invalid SET command", "command", "SET")
+				log.Println("Invalid SET command", "command", "SET")
 				p.conn.Write([]byte("Invalid SET command\r\n"))
 				return
 			}
 			keyName := lines[1]
 			keyValue := strings.Join(lines[2:], "\n") + "\r\n"
 			p.SetKey(keyName, keyValue)
-			response := fmt.Sprintf("Set Key: %s\r\n", keyName)
+			response := "+OK\r\n"
 			p.conn.Write([]byte(response))
 		case "GET":
-			slog.Info("Command called", "command", "GET")
+			log.Println("Command called", "command", "GET")
 			if len(lines) < 2 {
-				slog.Info("Invalid GET command", "command", "GET")
+				log.Println("Invalid GET command", "command", "GET")
 				p.conn.Write([]byte("Invalid GET command\r\n"))
 				return
 			}
@@ -82,7 +81,7 @@ func (p *Peer) readLoop() {
 				p.conn.Write([]byte(response))
 				return
 			}
-			response := fmt.Sprintf("Value: %s\r\n", keyValue)
+			response := keyValue
 			p.conn.Write([]byte(response))
 
 		default:
@@ -91,36 +90,4 @@ func (p *Peer) readLoop() {
 
 	}
 
-	// for _, line := range lines {
-	// 	fmt.Print(lines)
-	// 	command := strings.ToUpper(line)
-	// 	switch command {
-	// 	case "PING":
-	// 		p.conn.Write([]byte("+PONG\r\n"))
-	// 	case "ECHO":
-	// 		p.conn.Write([]byte("ECHO\r\n"))
-	// 	default:
-	// 		p.conn.Write([]byte("Command not recognized\r\n"))
-	// 	}
-
-	// }
 }
-
-// func (s *Server) handleConnection(conn net.Conn) {
-// 	defer conn.Close()
-
-// 	scanner := bufio.NewScanner(conn)
-
-// 	for scanner.Scan() {
-// 		command := scanner.Text()
-// 		lines := strings.Split(strings.ReplaceAll(command, "\r", ""), `\n`)
-// 		fmt.Print(lines)
-// 		for _, line := range lines {
-// 			if strings.ToUpper(line) == "PING" {
-// 				conn.Write([]byte("+PONG\r\n"))
-// 			} else {
-// 				conn.Write([]byte("Command not recognized\r\n"))
-// 			}
-// 		}
-// 	}
-// }
