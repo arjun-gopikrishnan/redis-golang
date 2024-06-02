@@ -104,3 +104,7 @@ func (p *Peer) ReadLoop() {
 	}
 
 }
+
+func (p *Peer) WriteToClient(s string){
+	p.conn.Write([]byte(s))
+}
