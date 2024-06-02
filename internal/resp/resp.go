@@ -25,13 +25,12 @@ func (rc *RedisCommand) Display(){
 }
 
 func ParseRespCommand(s string) (RedisCommand,error){
-	lines := strings.Split(strings.ToUpper(strings.ReplaceAll(s, "\r\n", "")), ` `)
+	lines := strings.Split(strings.ReplaceAll(s, "\r\n", ""), ` `)
 	if len(lines) < 1 {
 		return RedisCommand{}, errors.New("empty command")
 	}
 	var command string
-	print("lines",lines[0])
-	switch lines[0] {
+	switch strings.ToUpper(lines[0]) {
 	case "PING", "SET", "GET", "ECHO":
 		command = lines[0]
 	default:
@@ -47,7 +46,7 @@ func ParseRespCommand(s string) (RedisCommand,error){
 	return rObj,nil
 }
 
-func EncodeNullToResp(s string) string{
+func EncodeNullToResp() string{
 	return "$-1\r\n"
 }
 
