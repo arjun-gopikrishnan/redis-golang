@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/arjun/redis-go/internal/keystore"
 	. "github.com/arjun/redis-go/internal/peer"
 )
 
@@ -19,18 +20,20 @@ type Server struct {
 	peers     map[*Peer]bool
 	addPeerCh chan *Peer
 	quitChan  chan struct{}
+	Cache *keystore.Store
 }
 
 func NewServer(cfg Config) *Server {
 	if len(cfg.ListenAddress) == 0 {
 		cfg.ListenAddress = defaultListenAddress
 	}
-
+	cache,_ := keystore.NewStore()
 	return &Server{
 		Config:    cfg,
 		peers:     make(map[*Peer]bool),
 		addPeerCh: make(chan *Peer),
 		quitChan:  make(chan struct{}),
+		Cache: cache,
 	}
 }
 
@@ -78,7 +81,7 @@ func (s *Server) handleConn(conn net.Conn) {
 
 	log.Println("New peer connected", "remoteAddr", conn.RemoteAddr())
 
-	go peer.ReadLoop()
+	go peer.ReadLoop(s.Cache)
 }
 
 func main() {

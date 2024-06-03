@@ -3,12 +3,14 @@ package peer
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"strings"
 
 	"log"
 
+	"github.com/arjun/redis-go/internal/keystore"
 	. "github.com/arjun/redis-go/internal/resp"
 )
 
@@ -36,7 +38,7 @@ func (p *Peer) GetKey(key string) (string, error) {
 	return value, nil
 }
 
-func (p *Peer) ReadLoop() {
+func (p *Peer) ReadLoop(s *keystore.Store) {
 	defer p.conn.Close()
 	scanner := bufio.NewScanner(p.conn)
 
@@ -73,6 +75,7 @@ func (p *Peer) ReadLoop() {
 			keyName := RedisCommand.Args[0]
 			keyValue := strings.Join(RedisCommand.Args[1:], "\n")
 			p.SetKey(keyName, keyValue)
+			s.SetKey(keyName,keyValue,100,"Arjun")
 			response := EncodeSimpleStringToResp("OK")
 			p.conn.Write([]byte(response))
 		case "GET":
@@ -86,7 +89,8 @@ func (p *Peer) ReadLoop() {
 			keyName := RedisCommand.Args[0]
 
 			keyValue, err := p.GetKey(keyName)
-
+			storeVal,_ := s.GetKey(keyName)
+			fmt.Print(storeVal)
 			if err != nil {
 				response := EncodeNullToResp()
 				p.conn.Write([]byte(response))
