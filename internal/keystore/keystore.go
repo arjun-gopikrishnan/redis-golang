@@ -38,6 +38,7 @@ func (s *Store) GetKey(keyName string) (storageKey,error){
 	}
 
 	if currTimeStamp.After(value.Expiry){
+		delete(s.store,keyName)
 		return value,errors.New("key has expired")
 	}
 
