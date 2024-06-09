@@ -38,7 +38,7 @@ func ParseRespCommand(s string) (RedisCommand,error){
 	}
 	
 
-	rObj := RedisCommand{
+	rObj := RedisCommand{ 
 		Command: command,
 		Args:    lines[1:],
 		Raw:     s,
@@ -63,6 +63,39 @@ func EncodeBulkStringToResp(s string) string{
 func EncodeSimpleStringToResp(s string) string{
 	return "+" + s + "\r\n"
 }
+
+func EncodeArrayToResp(s string) string {
+	stringArray := strings.Split(s, " ")
+	wordCount := len(stringArray)
+	var respArray strings.Builder
+
+	// Append the array header
+	respArray.WriteString(fmt.Sprintf("*%d\r\n", wordCount))
+
+	// Encode each string and append to the result
+	for _, substr := range stringArray {
+		parsedString := EncodeBulkStringToResp(substr)
+		respArray.WriteString(parsedString)
+	}
+
+	return respArray.String()
+}
+
+func DecodeArrayFromResp(s string) []string {
+	RespCommands := strings.Split(s, "\r\n")
+	var decodedArray []string
+
+	// Ignore the first element and process the rest
+	for i := 1; i < len(RespCommands); i += 2 {
+		if i+1 < len(RespCommands) && RespCommands[i] != "" {
+			decodedArray = append(decodedArray, RespCommands[i+1])
+		}
+	}
+
+	return decodedArray
+}
+
+// func DecodeArrayToResp
 
 func EncodeIntToResp(n int) string {
 	var signBit string

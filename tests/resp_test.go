@@ -9,6 +9,37 @@ import (
 	. "github.com/arjun/redis-go/internal/resp" // Adjust the import path based on your project structure
 )
 
+func TestEncodeArrayToResp(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "hello world",
+			expected: "*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n",
+		},
+		{
+			input:    "foo bar baz",
+			expected: "*3\r\n$3\r\nfoo\r\n$3\r\nbar\r\n$3\r\nbaz\r\n",
+		},
+		{
+			input:    "singleword",
+			expected: "*1\r\n$10\r\nsingleword\r\n",
+		},
+		{
+			input:    "",
+			expected: "*1\r\n$0\r\n\r\n",
+		},
+	}
+
+	for _, test := range tests {
+		result := EncodeArrayToResp(test.input)
+		if result != test.expected {
+			t.Errorf("For input %q, expected %q, but got %q", test.input, test.expected, result)
+		}
+	}
+}
+
 func TestParseRespCommand(t *testing.T) {
     // Define test cases
     testCases := []struct {

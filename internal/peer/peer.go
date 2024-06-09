@@ -3,9 +3,9 @@ package peer
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
+	"strconv"
 	"strings"
 
 	"log"
@@ -67,15 +67,42 @@ func (p *Peer) ReadLoop(s *keystore.Store) {
 				p.conn.Write([]byte(response))
 			}
 		case "SET":
+			
+			var keyValue string
+			lastCommandAt := len(RedisCommand.Args)
+			
+			ttl := 10000
+
 			if len(RedisCommand.Args) < 2 {
 				response := EncodeErrorMsgToResp("SET needs key and value name","SYNTAXERR")
 				p.conn.Write([]byte(response))
 				continue
 			}
+
 			keyName := RedisCommand.Args[0]
-			keyValue := strings.Join(RedisCommand.Args[1:], "\n")
+
+
+			if len(RedisCommand.Args) > 3{
+				commandLen := len(RedisCommand.Args)
+
+				//Expiry command handling
+				if RedisCommand.Args[commandLen-2] == "px"{
+					 
+					ttl,err = strconv.Atoi(RedisCommand.Args[commandLen-1])
+
+					if err!=nil{
+						response := EncodeErrorMsgToResp("SET PX needs to be valid number","SYNTAXERR")
+						p.conn.Write([]byte(response))
+						continue
+					}
+
+					lastCommandAt = commandLen - 2   
+				}
+			}
+
+			keyValue = strings.Join(RedisCommand.Args[1:lastCommandAt], "\n")
 			p.SetKey(keyName, keyValue)
-			s.SetKey(keyName,keyValue,100,"Arjun")
+			s.SetKey(keyName,keyValue,ttl,"Arjun")
 			response := EncodeSimpleStringToResp("OK")
 			p.conn.Write([]byte(response))
 		case "GET":
@@ -88,15 +115,20 @@ func (p *Peer) ReadLoop(s *keystore.Store) {
 
 			keyName := RedisCommand.Args[0]
 
-			keyValue, err := p.GetKey(keyName)
-			storeVal,_ := s.GetKey(keyName)
-			fmt.Print(storeVal)
+			// keyValue, err := p.GetKey(keyName)
+			keyValue,err := s.GetKey(keyName)
+
+			stringKeyVal := keyValue.Value()
+
+			// fmt.Printf("%s",storeErr.Error())
+
+			// fmt.Print(storeVal)
 			if err != nil {
 				response := EncodeNullToResp()
 				p.conn.Write([]byte(response))
 				continue
 			}
-			successResponse := EncodeBulkStringToResp(keyValue)
+			successResponse := EncodeBulkStringToResp(stringKeyVal)
 			p.conn.Write([]byte(successResponse))
 			
 			

@@ -3,6 +3,7 @@ package keystore
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
 
@@ -14,7 +15,7 @@ type Store struct{
 type storageKey struct{
 	keyname string
 	value interface{}
-	expiry int
+	Expiry time.Time
 	metaData string
 	active bool
 }
@@ -27,11 +28,19 @@ func NewStore() (*Store,error){
 }
 
 func (s *Store) GetKey(keyName string) (storageKey,error){
+
+	currTimeStamp := time.Now()
+
 	value, exists := s.store[keyName]
 
 	if !exists {
 		return value,  errors.New("key does not exit within this store")
 	}
+
+	if currTimeStamp.After(value.Expiry){
+		return value,errors.New("key has expired")
+	}
+
 	return value, nil
 }
 
@@ -40,7 +49,7 @@ func(s *Store) SetKey(keyName string,keyValue interface{},expiryDuration int,cli
 	newStorageKeyInstance := storageKey{
 		keyname: keyName,
 		value: keyValue,
-		expiry: expiryDuration,
+		Expiry: time.Now().Add(time.Duration(expiryDuration)),
 		metaData: clientMetaData,
 		active: true,
 	}
@@ -51,6 +60,14 @@ func(s *Store) SetKey(keyName string,keyValue interface{},expiryDuration int,cli
 	s.store[keyName] = newStorageKeyInstance
 
 	return nil
+}
+
+func (s *storageKey) Value() string {
+
+    if str, ok := s.value.(string); ok {
+        return str
+    }
+    return "" // or handle the case where value is not a string
 }
 
 
